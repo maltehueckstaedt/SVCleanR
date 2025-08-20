@@ -1,7 +1,9 @@
 # SVSCleanR <img src="img/SVCleanR_Logo.svg" align="right" height="300" /></a>
 
 ## Beschreibung  
-`SVCleanR` ist ein R-Paket, das speziell dafür entwickelt wurde, effizient zu erkennen, welche der neuen Scraping-Daten bereits klassifiziert wurden. Bereits klassifizierte Daten werden dabei aussortiert, sodass nur die noch nicht klassifizierten Datensätze bearbeitet werden müssen. Nach der Klassifizierung der verbleibenden Daten werden alle Informationen wieder zusammengeführt. Dieses Vorgehen spart Ressourcen und ermöglicht eine besonders schnelle und gezielte Klassifizierung neuer Scraping-Daten.
+`SVCleanR` ist ein R-Paket, das speziell dafür entwickelt wurde, das Cleaning von HEX-Daten einfacher aber auch effizienter zu gestalten.
+
+Für eine Übersicht und Beispiele der einzelnen Funktionen, kann das [Wiki](https://github.com/maltehueckstaedt/SVCleanR/wiki) konsultiert werden.
 
 ## Installation
 
@@ -9,4 +11,12 @@
 
 ```r
 remotes::install_github("maltehueckstaedt/SVCleanR")
+```
+
+### Paket-Update: Wie aktualisiere ich SVCleanR?
+
+Wenn du bereits eine ältere Version von `SVCleanR` installiert hast und auf die neueste Version updaten möchtest, kannst du den Installationsbefehl mit dem Argument `force = TRUE` ausführen. Dadurch wird die aktuellste Version von GitHub installiert und die alte Version überschrieben:
+
+```r
+remotes::install_github("maltehueckstaedt/SVCleanR", force = TRUE)
 ```
