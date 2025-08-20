@@ -10,3 +10,13 @@ raw_data_bremen_to_classify_alt <- get_unclassified_data(
 getwd()
 devtools::document()
 devtools::install()
+
+# Git-Workflow für Versionsupdate
+# 1. Erst Pull ausführen (wegen Push-Konflikt)
+usethis::use_git_pull()
+
+# 2. Dann Version erhöhen
+usethis::use_version("minor")
+
+# 3. Änderungen pushen
+usethis::use_git_push()
