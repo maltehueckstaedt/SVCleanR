@@ -28,22 +28,26 @@
 #' @export
 check_organisation <- function(data, organisation_col = "organisation") {
 
+  # Prüfen, ob die gewünschte Spalte im Dataframe existiert
   if (!organisation_col %in% colnames(data)) {
     stop(paste("Spalte '", organisation_col, "' nicht im Dataframe gefunden."))
   }
 
+  # Hilfsspalten erzeugen: Länge, zu lang (>1000), enthält '>'
   data <- dplyr::mutate(
     data,
-    orga_length = nchar(.data[[organisation_col]]),
-    orga_too_long = !is.na(.data[[organisation_col]]) & orga_length > 1000,
-    orga_has_arrow = !is.na(.data[[organisation_col]]) & stringr::str_detect(.data[[organisation_col]], ">")
+    orga_length = nchar(.data[[organisation_col]]), # Zeichenlänge des Eintrags
+    orga_too_long = !is.na(.data[[organisation_col]]) & orga_length > 1000, # zu lange Einträge
+    orga_has_arrow = !is.na(.data[[organisation_col]]) & stringr::str_detect(.data[[organisation_col]], ">") # enthält '>'
   )
 
+  # Haupt-Check: Problematische Trennzeichen und Sonderzeichen erkennen
   results <- data %>%
     dplyr::mutate(
-      row_index = dplyr::row_number(),
-      original_value = .data[[organisation_col]],
-      is_na_or_empty = is.na(.data[[organisation_col]]) | .data[[organisation_col]] == "",
+      row_index = dplyr::row_number(), # Zeilennummer für spätere Ausgabe
+      original_value = .data[[organisation_col]], # Originalwert sichern
+      is_na_or_empty = is.na(.data[[organisation_col]]) | .data[[organisation_col]] == "", # NA oder leer?
+      # Problemtyp bestimmen (nur, wenn nicht NA/leer)
       problem_type = dplyr::case_when(
         is_na_or_empty ~ NA_character_,
         stringr::str_detect(.data[[organisation_col]], "\\|\\s") ~ "Enthält '| '",
@@ -53,16 +57,18 @@ check_organisation <- function(data, organisation_col = "organisation") {
         stringr::str_detect(.data[[organisation_col]], "[^\\s];\\s") ~ "Nur rechts Leerzeichen",
         TRUE ~ NA_character_
       ),
-      has_problem = !is.na(problem_type)
+      has_problem = !is.na(problem_type) # TRUE, wenn Problem erkannt
     ) %>%
-    dplyr::filter(!is_na_or_empty & has_problem) %>%
-    dplyr::select(row_index, original_value, has_problem, problem_type)
+    dplyr::filter(!is_na_or_empty & has_problem) %>% # nur problematische, nicht-leere Zeilen
+    dplyr::select(row_index, original_value, has_problem, problem_type) # relevante Spalten auswählen
 
+  # Statistiken berechnen: Gesamt, NA/leer, geprüft, problematisch
   total_rows <- nrow(data)
   na_rows <- data %>% dplyr::pull(!!organisation_col) %>% {sum(is.na(.) | . == "")}
   checked_rows <- total_rows - na_rows
   problem_rows <- nrow(results)
 
+  # Übersichtliche Ausgabe der Statistiken
   message("\n||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||")
   message("||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||")
   message("||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||")
@@ -76,9 +82,11 @@ check_organisation <- function(data, organisation_col = "organisation") {
   message(sprintf("• Problematische Zeilen:    %d", problem_rows))
   message(sprintf("• Problematische Zeilen (%%): %.2f%%", ifelse(checked_rows > 0, problem_rows/checked_rows*100, 0)))
 
-  Sys.sleep(1)
+  Sys.sleep(1) # kurze Pause für bessere Lesbarkeit
 
+  # Zu lange Organisationseinträge (>1000 Zeichen) ausgeben
   long_orgas <- dplyr::filter(data, orga_too_long & !is.na(.data[[organisation_col]]))
+  #browser()
   if (nrow(long_orgas) > 0) {
     message(crayon::red("\n||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||"))
     message(crayon::red("||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||"))
@@ -87,13 +95,17 @@ check_organisation <- function(data, organisation_col = "organisation") {
     message(crayon::red("||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||"))
     message(crayon::red("||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||"))
     message(crayon::red("||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||"))
-    for (i in seq_len(nrow(long_orgas))) {
-      message(sprintf("• Zeile %d: %d Zeichen", long_orgas$row_number[i], long_orgas$orga_length[i]))
-      message(sprintf("  Wert: %s", long_orgas[[organisation_col]][i]))
-    }
+
+    long_orgas %>%
+      dplyr::mutate(orga_wert = long_orgas[1]) %>%
+      dplyr::mutate(row_in_data = match(orga_wert, data[[organisation_col]])) %>%
+      dplyr::distinct(row_in_data, orga_wert) %>%
+      purrr::pwalk(~ message(sprintf("• Zeile %d: %s", ..1, ..2)))
+
     message("Hinweis: Organisationsvariable ggf. granular cleanen. Gibt es eine Pfad-Variable, die helfen kann? Gibt es andere Variablen, die eine granulareres Cleaning ermöglicht?")
   }
 
+  # Einträge mit Pfeilzeichen ('>') ausgeben
   arrow_orgas <- dplyr::filter(data, orga_has_arrow & !is.na(.data[[organisation_col]]))
   if (nrow(arrow_orgas) > 0) {
     Sys.sleep(1)
@@ -104,16 +116,22 @@ check_organisation <- function(data, organisation_col = "organisation") {
     message(crayon::red("||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||"))
     message(crayon::red("||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||"))
     message(crayon::red("||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||"))
-    for (i in seq_len(nrow(arrow_orgas))) {
-      message(sprintf("• Zeile %d: %s", arrow_orgas$row_number[i], arrow_orgas[[organisation_col]][i]))
-    }
+    # Korrigierte Ausgabe der betroffenen Zeilen
+    # Die echte Zeilennummer aus dem Original-Dataframe mit tidyverse ermitteln und ausgeben
+   arrow_orgas %>%
+    dplyr::mutate(orga_wert = .data[[organisation_col]]) %>%
+    dplyr::mutate(row_in_data = match(orga_wert, data[[organisation_col]])) %>%
+    dplyr::distinct(row_in_data, orga_wert) %>%
+    purrr::pwalk(~ message(sprintf("• Zeile %d: %s", ..1, ..2)))
     message("Hinweis: Pfeilzeichen ('>') sollten entfernt werden.")
   }
 
+  # Alle nicht-leeren Organisationseinträge extrahieren
   orga_values <- data %>%
     dplyr::filter(!is.na(.data[[organisation_col]]) & .data[[organisation_col]] != "") %>%
     dplyr::pull(!!organisation_col)
 
+  # Splitten an ' ; ', trimmen, leere entfernen, dann Anzahl unique Werte bestimmen
   orga_einzelwerte <- unlist(strsplit(orga_values, "\\s*;\\s*")) %>%
     stringr::str_trim() %>%
     purrr::discard(~ .x == "" | is.na(.x))
@@ -121,6 +139,7 @@ check_organisation <- function(data, organisation_col = "organisation") {
 
   Sys.sleep(1)
 
+  # Ausgabe: Anzahl unique Organisationseinheiten
   message("\n||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||")
   message("||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||")
   message("||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||")
@@ -133,6 +152,7 @@ check_organisation <- function(data, organisation_col = "organisation") {
     message(crayon::red("⚠️ Hinweis: Mehr als 1000 verschiedene Organisationseinheiten – Daten prüfen!"))
   }
 
+  # Problematische Trennzeichen ausgeben, falls vorhanden
   if (problem_rows > 0) {
     Sys.sleep(1)
     message(crayon::red("\n||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||"))
@@ -142,8 +162,10 @@ check_organisation <- function(data, organisation_col = "organisation") {
     message(crayon::red("||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||"))
     message(crayon::red("||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||"))
     message(crayon::red("||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||"))
+    # Nur einzigartige Problemfälle (nach Wert & Typ)
     unique_results <- dplyr::distinct(results, original_value, problem_type, .keep_all = TRUE)
 
+    # Für jeden Problemtyp die betroffenen Zeilen ausgeben
     problem_types <- unique(unique_results$problem_type)
     for (ptype in problem_types) {
       message("\n--------------------------------------------------------------------------------")
@@ -154,11 +176,11 @@ check_organisation <- function(data, organisation_col = "organisation") {
         message("\n--------------------------------------------------------------------------------")
         message(sprintf("• Zeile %d: %s", values$row_index[i], values$original_value[i]))
         message("--------------------------------------------------------------------------------")
-
       }
     }
 
   } else {
+    # Alles ok!
     message("\n✅ Alle Organisationseinträge sind korrekt formatiert mit ' ; '!")
   }
 }
