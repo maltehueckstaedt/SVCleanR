@@ -35,6 +35,16 @@ check_organisation <- function(data, organisation_col = "organisation") {
   na_rows <- sum(is.na(x) | x == "")
   checked_rows <- total_rows - na_rows
 
+  # Prüfen, ob str_squish() sinnvoll wäre
+  squish_changes <- sum(x != stringr::str_squish(x), na.rm = TRUE)
+  squish_pct <- if (checked_rows > 0) squish_changes / checked_rows * 100 else 0
+  squish_examples <- tibble::tibble(
+    original = x,
+    squished = stringr::str_squish(x)
+  ) %>%
+    dplyr::filter(original != squished) %>%
+    dplyr::slice_head(n = 5)
+
   result <- tibble::tibble(original_value = x) %>%
     dplyr::mutate(
       problem_type = purrr::map_chr(original_value, function(val) {
@@ -89,6 +99,7 @@ check_organisation <- function(data, organisation_col = "organisation") {
   message(sprintf("• Problematische Zeilen:      %d", problem_rows))
   message(sprintf("• Problematische Zeilen (%%): %.2f%%", problem_pct))
   message(sprintf("• Einzigartige Organisationen: %d", n_unique_orgs))
+  message(sprintf("• Zeilen mit überflüssigen Leerzeichen: %d (%.2f%%)", squish_changes, squish_pct))
 
   if (nrow(result) > 0) {
     problem_summary <- result %>%
@@ -103,4 +114,3 @@ check_organisation <- function(data, organisation_col = "organisation") {
 
   return(result)
 }
-
