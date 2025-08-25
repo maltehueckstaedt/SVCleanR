@@ -44,7 +44,8 @@ if ("organisation" %in% names(test_data)) {
 }
 
 # prüfen ob die Strings > 1000 Zeichen lang sind
-check_organisation(test_data) |> View()
+test_organisation <- check_organisation(test_data)  
+test_organisation |> View()
 
 # ||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
 # ||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
