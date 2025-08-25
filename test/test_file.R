@@ -33,16 +33,26 @@ usethis::use_git_push()
 devtools::load_all() # Passe den Pfad ggf. an, z.B. "../iuc" wenn das Paket im übergeordneten Verzeichnis liegt
 
 
-test_data_org <- read.csv("data/test_data_organisation.csv", stringsAsFactors = FALSE)
+test_data <- read.csv("data/test_data_organisation.csv", stringsAsFactors = FALSE)
 
 # Zufällig einige NAs in der Organisationsspalte erzeugen (z.B. 5% der Zeilen)
 set.seed(123) # für Reproduzierbarkeit
-if ("organisation" %in% names(test_data_org)) {
-  n <- nrow(test_data_org)
+if ("organisation" %in% names(test_data)) {
+  n <- nrow(test_data)
   na_indices <- sample(seq_len(n), size = ceiling(0.05 * n))
-  test_data_org$organisation[na_indices] <- NA
+  test_data$organisation[na_indices] <- NA
 }
 
 # prüfen ob die Strings > 1000 Zeichen lang sind
-check_organisation(test_data_org) |> View()
+check_organisation(test_data) |> View()
 
+# ||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
+# ||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
+# ||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
+# Update Test is_valid_hochschule ---------------------------
+# ||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
+# ||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
+# ||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
+
+
+check_hochschule(test_data$hochschule_kurz)
