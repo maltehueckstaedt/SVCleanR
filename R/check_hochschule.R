@@ -59,35 +59,58 @@ check_hochschule <- function(x) {
   
   # Problemfälle extrahieren
   not_found <- unique(x[!res & !is.na(x) & x != ""])
+
+  var_name <- deparse(substitute(x))|> 
+    stringr::str_replace(".*\\$", "") 
+  
+  var_name_clean <- var_name |> 
+    stringr::str_replace(".*\\$", "") |>
+    stringr::str_replace_all("_", " ") |>
+    stringr::str_to_upper()
+ 
   
   # Ausgabe
   message("\n||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||")
   message("||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||")
   message("||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||")
-  message("                         HOCHSCHULEN-CHECK                                      ")
+  message(sprintf("                            %s                                ", var_name_clean))
   message("||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||")
   message("||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||")
   message("||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||")
-  message(sprintf("• Gesamte Zeilen:             %d", total_rows))
+
+
+  message("\n:::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::")
+  message("                                    ÜBERSICHT            ")
+  message(":::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::")
+
+  message(sprintf("\n• Gesamte Zeilen:             %d", total_rows))
   message(sprintf("• NA/Leere Zeilen:            %d", na_rows))
-  message(sprintf("• Überprüfte Zeilen:          %d", checked_rows)) 
-  
+  message(sprintf("• Überprüfte Zeilen:          %d", checked_rows))
+
+  if (length(na_rows) > 0) {
+    message("\n⛔ Achtung: Es wurden NA/Leere Strings gefunden!")
+    message(sprintf("\n🔔 Hinweis: Auf der Variable >>%s<< sind NA und leere Strings nicht erlaubt.", var_name))
+  }
+
   if (length(not_found) > 0) {
-    message("\nNicht in Hochschulliste gefunden:")
-    message(paste(" -", not_found, collapse = "\n"))
+    message("\n:::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::")
+    message("                                UNGÜLTIGE WERTE            ")
+    message(":::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::")
+    message(paste("\n •", not_found, collapse = "\n"))
+    message(sprintf("\n⛔ Achtung: Es wurden %d ungültige Werte gefunden", length(not_found)))
+    message("\n🔔 Hinweis: Gegebenenfalls liegt ein Rechtschreibfehler vor. Für eine Übersicht der gültigen Werte, siehe:")
+    message("http://srv-data01:30080/hex/hex/-/blob/main/hochschulen_namen_kuerzel.sql?ref_type=heads")
+
   }
   
   if (n_unique_orgs > 1) {
-    message("\nHinweis: Es wurden verschiedene unique Werte gefunden!")
-    message("Gefundene einzigartige Werte:")
-    message(paste(" -", unique(na.omit(x)), collapse = "\n"))
-    message("Es darf nur einen gültigen Wert sowohl auf der Variable >>hochschule<< als auch auf der Variable >>hochschule_kurz<< geben.")
-    message("NAs, leere Strings und falsch geschriebene Werte müssen korrigiert werden.")
-    message("Bitte überprüfen Sie die Eingabe.")
+    message("\n:::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::")
+    message("                                 UNIQE WERTE            ")
+    message(":::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::")
+    message(paste(" •", unique(na.omit(x)), collapse = "\n"))
+    message(sprintf("\n⛔ Achtung: Es wurden %d einzigartige Werte gefunden", n_unique_orgs))
+    message(sprintf("\n🔔 Hinweis: Es darf nur einen uniquen Wert sowohl auf der Variable >>%s<< geben. Für eine Übersicht der gültigen Werte, siehe:", var_name))
+    message("http://srv-data01:30080/hex/hex/-/blob/main/hochschulen_namen_kuerzel.sql?ref_type=heads")
   }
-  
-  message("\n Es liegt möglicherweise eine Rechtschreibfehler vor. Hier ist die Liste mit gültigen Werten zu finden:")
-  message("http://srv-data01:30080/hex/hex/-/blob/main/hochschulen_namen_kuerzel.sql?ref_type=heads")
-  
   invisible(res)
 }
