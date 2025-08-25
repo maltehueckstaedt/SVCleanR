@@ -54,5 +54,7 @@ check_organisation(test_data) |> View()
 # ||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
 # ||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
 
+devtools::load_all() # Passe den Pfad ggf. an, z.B. "../iuc" wenn das Paket im übergeordneten Verzeichnis liegt
+
 
 check_hochschule(test_data$hochschule_kurz)
