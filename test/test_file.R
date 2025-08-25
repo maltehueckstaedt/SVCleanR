@@ -10,19 +10,16 @@ library(SVCleanR)
 # ||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
 
 
-# getwd()
-# devtools::document()
-# devtools::install()
+getwd()
+devtools::document()
+devtools::install()
 
-# # Git-Workflow für Versionsupdate
-# # 1. Erst Pull ausführen (wegen Push-Konflikt)
-# usethis::use_git_pull()
 
-# # 2. Dann Version erhöhen
-# usethis::use_version("minor")
+# 2. Dann Version erhöhen
+usethis::use_version("minor")
 
-# # 3. Änderungen pushen
-# usethis::use_git_push()
+# 3. Änderungen pushen
+usethis::use_git_push()
 
 # ||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
 # ||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
@@ -49,4 +46,3 @@ if ("organisation" %in% names(test_data_org)) {
 # prüfen ob die Strings > 1000 Zeichen lang sind
 check_organisation(test_data_org) |> View()
 
- 
