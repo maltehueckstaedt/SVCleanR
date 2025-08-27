@@ -114,7 +114,7 @@ check_organisation <- function(data, organisation_col = "organisation") {
     purrr::walk2(problem_summary$problem_type, problem_summary$n, ~ {
       message(sprintf("❌ %s: %d", .x, .y))
     })
-    message("\n🔔 Hinweis: Probleme bitte beheben und Check erneut durchführen.\n")
+    message("\n🔔 Hinweis: Probleme auf der Variable `organisation` bitte beheben und Check erneut durchführen.\n")
   }
 
   # Ergebnis nach problem_type sortieren (alphabetisch)
