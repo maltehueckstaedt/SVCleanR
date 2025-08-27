@@ -59,7 +59,7 @@ check_organisation <- function(data, organisation_col = "organisation") {
         if (stringr::str_detect(val, "(?<!\\s);\\s"))   probs <- c(probs, "Semikolon: nur rechts Leerzeichen")
         if (nchar(val) > 1000)                          probs <- c(probs, "Eintrag zu lang (>1000)")
         if (stringr::str_detect(val, ">"))              probs <- c(probs, "Enthält '>'")
-
+        if (val != stringr::str_squish(val)) probs <- c(probs, "Überflüssige Leerzeichen")
         if (length(probs) == 0) NA_character_ else paste(probs, collapse = ", ")
       })
     ) %>%
@@ -96,7 +96,7 @@ check_organisation <- function(data, organisation_col = "organisation") {
 
   message("\n:::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::")
   message("                                    ÜBERSICHT            ")
-  message(":::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::")
+  message(":::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::\n")
 
   message(sprintf("• Gesamte Zeilen:             %d", total_rows))
   message(sprintf("• NA/Leere Zeilen:            %d", na_rows))
@@ -104,17 +104,23 @@ check_organisation <- function(data, organisation_col = "organisation") {
   message(sprintf("• Problematische Zeilen:      %d", problem_rows))
   message(sprintf("• Problematische Zeilen (%%): %.2f%%", problem_pct))
   message(sprintf("• Einzigartige Organisationen: %d", n_unique_orgs))
-  message(sprintf("• Zeilen mit überflüssigen Leerzeichen: %d (%.2f%%)", squish_changes, squish_pct))
 
   if (nrow(result) > 0) {
     problem_summary <- result %>%
       tidyr::separate_rows(problem_type, sep = ",\\s*") %>%
       dplyr::count(problem_type, sort = TRUE)
 
-    message("\nAufgetretene Problemtypen:")
+    message("\n⛔ Achtung: Es wurden folgende Probleme gefunden:\n")
     purrr::walk2(problem_summary$problem_type, problem_summary$n, ~ {
-      message(sprintf("• %s: %d", .x, .y))
+      message(sprintf("❌ %s: %d", .x, .y))
     })
+    message("\n🔔 Hinweis: Probleme bitte beheben und Check erneut durchführen.\n")
+  }
+
+  # Ergebnis nach problem_type sortieren (alphabetisch)
+  if ("problem_type" %in% names(result)) {
+    result <- result %>%
+      dplyr::arrange(problem_type)
   }
 
   return(result)
