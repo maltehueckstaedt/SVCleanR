@@ -59,3 +59,16 @@ devtools::load_all() # Passe den Pfad ggf. an, z.B. "../iuc" wenn das Paket im Ã
 
 
 check_hochschule(test_data$hochschule_kurz)
+
+
+devtools::load_all() # Passe den Pfad ggf. an, z.B. "../iuc" wenn das Paket im Ã¼bergeordneten Verzeichnis liegt
+check_db(test_data)
+
+test_data  |> check_db()
+
+
+
+
+
+
+
