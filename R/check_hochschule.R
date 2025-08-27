@@ -89,12 +89,12 @@ check_hochschule <- function(x) {
 
   if (length(na_rows) > 0) {
     message("\n⛔ Achtung: Es wurden NA/Leere Strings gefunden!")
-    message(sprintf("\n🔔 Hinweis: Auf der Variable >>%s<< sind NA und leere Strings nicht erlaubt.", var_name))
+    message(sprintf("\n🔔 Hinweis: Auf der Variable `%s` sind NA und leere Strings nicht erlaubt.", var_name))
   }
 
   if (length(not_found) > 0) {
     message("\n:::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::")
-    message("                                UNGÜLTIGE WERTE            ")
+    message("                                UNGÜLTIGE WERTE                                  ")
     message(":::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::")
     message(paste("\n •", not_found, collapse = "\n"))
     message(sprintf("\n⛔ Achtung: Es wurden %d ungültige Werte gefunden", length(not_found)))
@@ -105,11 +105,11 @@ check_hochschule <- function(x) {
   
   if (n_unique_orgs > 1) {
     message("\n:::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::")
-    message("                                 UNIQE WERTE            ")
+    message("                                 UNIQUE WERTE                                    ")
     message(":::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::")
     message(paste(" •", unique(na.omit(x)), collapse = "\n"))
-    message(sprintf("\n⛔ Achtung: Es wurden %d einzigartige Werte gefunden", n_unique_orgs))
-    message(sprintf("\n🔔 Hinweis: Es darf nur einen uniquen Wert sowohl auf der Variable >>%s<< geben. Für eine Übersicht der gültigen Werte, siehe:", var_name))
+    message(sprintf("\n⛔ Achtung: Es wurden %d unique Werte gefunden", n_unique_orgs))
+    message(sprintf("\n🔔 Hinweis: Es darf nur einen uniquen Wert auf der Variable `%s` geben. Für eine Übersicht der gültigen Werte, siehe:", var_name))
     message("http://srv-data01:30080/hex/hex/-/blob/main/hochschulen_namen_kuerzel.sql?ref_type=heads")
   }
   invisible(res)
