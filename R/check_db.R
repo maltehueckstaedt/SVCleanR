@@ -1,9 +1,30 @@
-#' @importFrom SVCleanR check_hochschule check_organisation
-#' @param data Dataframe mit den zu prüfenden Daten
-#' @param hochschule_col Name der Hochschulspalte (Standard: "hochschule")
-#' @param hochschule_kurz_col Name der Kurzform-Hochschulspalte (Standard: "hochschule_kurz")
-#' @param organisation_col Name der Organisationsspalte (Standard: "organisation")
+#' Prüft die Datenbankstruktur und führt Validierungen durch
 #'
+#' Diese Funktion prüft, ob alle erwarteten Variablen im Datensatz vorhanden sind,
+#' listet fehlende Variablen auf und führt anschließend Plausibilitätsprüfungen
+#' der Hochschul- und Organisationsspalten durch.
+#'
+#' Es wird außerdem eine Übersicht über fehlende Variablen ausgegeben.
+#' Bei fehlenden Spalten läuft die Funktion trotzdem weiter und prüft alle
+#' vorhandenen Variablen.
+#'
+#' @details
+#' Folgende Schritte werden durchgeführt:
+#' \enumerate{
+#'   \item Überprüfung, ob alle erwarteten Variablen in \code{data} vorhanden sind.
+#'   \item Auflistung aller fehlenden Variablen in der Konsole.
+#'   \item Validierung der Hochschulspalten über \code{check_hochschule()}.
+#'   \item Validierung der Organisationsspalte über \code{check_organisation()}.
+#' }
+#'
+#' @param data Dataframe mit den zu prüfenden Daten.
+#' @param hochschule_col Name der Hochschulspalte (Standard: \code{"hochschule"}).
+#' @param hochschule_kurz_col Name der Kurzform-Hochschulspalte (Standard: \code{"hochschule_kurz"}).
+#' @param organisation_col Name der Organisationsspalte (Standard: \code{"organisation"}).
+#'
+#' @return Gibt unsichtbar \code{TRUE} zurück, wenn keine Variablen fehlen, andernfalls \code{FALSE}.
+#'
+#' @seealso \code{\link{check_hochschule}}, \code{\link{check_organisation}}
 #' @export
 check_db <- function(data,
                      hochschule_col = "hochschule",
@@ -51,4 +72,6 @@ check_db <- function(data,
     check_organisation(data, organisation_col)
     Sys.sleep(2)
   }
+
+  invisible(length(missing_cols) == 0)
 }
