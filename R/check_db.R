@@ -73,16 +73,36 @@ check_db <- function(test_data, werte = NULL) {
     "matchingart"
   )
 
-  agent <- pointblank::create_agent(tbl = ~ test_data) |>
-    pointblank::col_exists(columns = dplyr::all_of(expected_vars),
-                           actions = pointblank::action_levels(stop_at = 0.001)) |>
-    pointblank::col_vals_in_set(columns = pointblank::vars(hochschule),
-                                set = werte,
-                                actions = pointblank::action_levels(stop_at = 0.001)) |>
-    pointblank::col_vals_in_set(columns = pointblank::vars(hochschule_kurz),
-                                set = hochschule_kurz,
-                                actions = pointblank::action_levels(stop_at = 0.001)) |>
-    pointblank::interrogate()
+  agent <- pointblank::create_agent(
+      tbl = ~ test_data,
+      tbl_name = "DB-Check",
+      actions = pointblank::action_levels(
+        warn_at = 1,
+        stop_at = 1
+      )
+    ) |>
+      pointblank::col_exists(
+        columns = dplyr::all_of(expected_vars),
+        actions = pointblank::action_levels(stop_at = 1),
+        step_id = "col_exists_check",
+        label = "Prüfe, ob alle erwarteten Variablen vorhanden sind"
+      ) |>
+      pointblank::col_vals_in_set(
+        columns = pointblank::vars(hochschule),
+        set = werte,
+        actions = pointblank::action_levels(stop_at = 1),
+        step_id = "hochschule_in_set_check",
+        label = "Prüfe, ob hochschule gültig ist"
+      ) |>
+      pointblank::col_vals_in_set(
+        columns = pointblank::vars(hochschule_kurz),
+        set = hochschule_kurz,
+        actions = pointblank::action_levels(stop_at = 1),
+        step_id = "hochschule_kurz_in_set_check",
+        label = "Prüfe, ob hochschule_kurz gültig ist"
+      ) |>
+      pointblank::interrogate()
+
 
   print(pointblank::get_agent_report(agent, title = "DB-Check"))
   invisible(list(

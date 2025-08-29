@@ -34,7 +34,7 @@
 #' }
 #'
 #' @export
-pb_check_organisation <- function(data, organisation_col = "organisation",
+check_organisation <- function(data, organisation_col = "organisation",
                                   stop_at = 0.001, show_report = TRUE) {
   stopifnot(is.data.frame(data))
   col <- rlang::ensym(organisation_col)
@@ -44,13 +44,13 @@ pb_check_organisation <- function(data, organisation_col = "organisation",
   act_warn <- pointblank::action_levels(warn_at = stop_at)
 
   agent <- pointblank::create_agent(
-    tbl = ~ data,
-    tbl_name = "Organisation",   # optional für den Reporttitel
+    tbl = data,
+    tbl_name = "Organisation",
     actions = pointblank::action_levels(
-      warn_at = 1,
-      stop_at = 1
+      warn_at = stop_at,
+      stop_at = stop_at
     )
-  ) |>
+  )
 
     # 1) Nur korrektes Semikolon " ; " oder kein Semikolon
     pointblank::col_vals_regex(
