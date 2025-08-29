@@ -20,5 +20,3 @@ Wenn du bereits eine ältere Version von `SVCleanR` installiert hast und auf die
 ```r
 remotes::install_github("maltehueckstaedt/SVCleanR", force = TRUE)
 ```
-
-[![Binder](https://mybinder.org/badge_logo.svg)](https://mybinder.org/v2/gh/maltehueckstaedt/SVCleanR/HEAD?urlpath=rstudio)
