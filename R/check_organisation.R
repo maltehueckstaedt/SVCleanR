@@ -1,127 +1,117 @@
-#' Überprüft Organisationseinträge auf verschiedene Fehler
+#' Prüft Organisations-Variable auf definierte Qualitätsregeln
 #'
-#' Diese Funktion prüft die Werte einer Organisationsspalte in einem Dataframe auf verschiedene
-#' häufige Fehlerquellen. Dazu gehören unter anderem falsche oder fehlende Trennzeichen,
-#' unerwünschte Sonderzeichen, zu lange Einträge und andere Auffälligkeiten.
+#' Diese Funktion verwendet das \pkg{pointblank}-Paket, um die Werte in der
+#' Organisationsspalte systematisch zu validieren. Es werden verschiedene
+#' Checks durchgeführt (Semikolon, Sonderzeichen, Länge, Leerzeichen,
+#' Abschlussbegriffe). Optional wird ein HTML-Report mit Badges ausgegeben.
 #'
-#' Folgende Checks werden durchgeführt:
-#' \itemize{
-#'   \item Falsche oder fehlende Trennung mit " ; " (Leerzeichen, Semikolon, Leerzeichen)
-#'   \item Enthält das Zeichen "|"
-#'   \item Semikolon ohne beidseitiges Leerzeichen
-#'   \item Semikolon nur mit links oder rechts Leerzeichen
-#'   \item Zu lange Einträge (> 1000 Zeichen)
-#'   \item Enthält das Zeichen ">"
+#' @param data Ein \code{data.frame}, das die zu prüfende Spalte enthält.
+#' @param organisation_col Name der Organisationsspalte (Standard: "organisation").
+#' @param stop_at Schwellenwert für Fehler-Toleranz. Kann relativ (Anteil 0–1)
+#'   oder absolut (z. B. 1 für „Null Toleranz“) angegeben werden.
+#'   Standard: 0.001 (= 0.1 % fehlerhafte Zeilen).
+#' @param show_report Logisch; wenn \code{TRUE}, wird ein pointblank-Report
+#'   mit Badges im Viewer ausgegeben. Standard: \code{TRUE}.
+#'
+#' @details
+#' Die folgenden Prüfungen werden durchgeführt:
+#' \enumerate{
+#'   \item Nur korrektes Semikolon \code{" ; "} oder kein Semikolon
+#'   \item Kein \code{"|"} enthalten
+#'   \item Kein \code{">"} enthalten
+#'   \item Länge der Zeichenkette ≤ 1000
+#'   \item Keine überflüssigen Leerzeichen (wie \code{str_squish})
+#'   \item Warnung bei Abschluss-Begriffen (z. B. Bachelor, Master, Diplom)
 #' }
 #'
-#' Leere oder fehlende Werte werden ignoriert.
+#' @return Ein \code{pointblank} Agent-Objekt invisibly. Über
+#'   \code{pointblank::get_agent_report()} kann der Report auch separat erzeugt werden.
 #'
-#' @param data Dataframe mit einer Spalte für Organisationen.
-#' @param organisation_col Name der Organisationsspalte als Zeichenkette (Standard: "organisation").
+#' @examples
+#' \dontrun{
+#'   agent <- pb_check_organisation(test_data, organisation_col = "organisation")
+#'   pointblank::get_agent_report(agent)
+#' }
 #'
-#' @return Dataframe mit problematischen Einträgen, deren Zeilennummer, Originalwert und Art des Problems.
-#'
-#' @importFrom dplyr mutate filter select pull row_number distinct %>%
-#' @importFrom stringr str_detect str_trim
-#' @importFrom purrr discard
-#' @importFrom crayon red
 #' @export
-check_organisation <- function(data, organisation_col = "organisation") {
+pb_check_organisation <- function(data, organisation_col = "organisation",
+                                  stop_at = 0.001, show_report = TRUE) {
   stopifnot(is.data.frame(data))
-  if (!organisation_col %in% names(data)) stop(paste("Spalte", organisation_col, "nicht gefunden."))
+  col <- rlang::ensym(organisation_col)
 
-  x <- data[[organisation_col]]
-  total_rows <- length(x)
-  na_rows <- sum(is.na(x) | x == "")
-  checked_rows <- total_rows - na_rows
+  # Standard-Action-Levels
+  act_fail <- pointblank::action_levels(stop_at = stop_at)
+  act_warn <- pointblank::action_levels(warn_at = stop_at)
 
-  # Prüfen, ob str_squish() sinnvoll wäre
-  squish_changes <- sum(x != stringr::str_squish(x), na.rm = TRUE)
-  squish_pct <- if (checked_rows > 0) squish_changes / checked_rows * 100 else 0
-  squish_examples <- tibble::tibble(
-    original = x,
-    squished = stringr::str_squish(x)
-  ) %>%
-    dplyr::filter(original != squished) %>%
-    dplyr::slice_head(n = 5)
+  agent <- pointblank::create_agent(
+    tbl = ~ data,
+    tbl_name = "Organisation",   # optional für den Reporttitel
+    actions = pointblank::action_levels(
+      warn_at = 1,
+      stop_at = 1
+    )
+  ) |>
 
-  result <- tibble::tibble(original_value = x) %>%
-    dplyr::mutate(
-      problem_type = purrr::map_chr(original_value, function(val) {
-        if (is.na(val) || val == "") return(NA_character_)
+    # 1) Nur korrektes Semikolon " ; " oder kein Semikolon
+    pointblank::col_vals_regex(
+      columns = !!col,
+      regex   = "^(?:[^;]*(?:\\s;\\s))*[^;]*$",
+      actions = act_fail,
+      step_id = "separator_check",
+      label   = "separator_check"
+    ) |>
 
-        probs <- c()
-        if (stringr::str_detect(val, "Bachelor|Master|Diplom|Staatsexamen|Staatsexamens|SS|WS|B\\.Sc\\.|M\\.Sc\\.|B\\.A\\.|M\\.A\\.")) probs <- c(probs, "Verdacht auf Nicht-Organisationseinheiten")
-        if (stringr::str_detect(val, "\\|\\s"))        probs <- c(probs, "Enthält '| '")
-        if (stringr::str_detect(val, "\\|"))           probs <- c(probs, "Enthält '|'")
-        if (stringr::str_detect(val, "(?<!\\s);(?!\\s)")) probs <- c(probs, "Semikolon ohne Leerzeichen")
-        if (stringr::str_detect(val, "\\s;(?!\\s)"))    probs <- c(probs, "Semikolon: nur links Leerzeichen")
-        if (stringr::str_detect(val, "(?<!\\s);\\s"))   probs <- c(probs, "Semikolon: nur rechts Leerzeichen")
-        if (nchar(val) > 1000)                          probs <- c(probs, "Eintrag zu lang (>1000)")
-        if (stringr::str_detect(val, ">"))              probs <- c(probs, "Enthält '>'")
-        if (val != stringr::str_squish(val)) probs <- c(probs, "Überflüssige Leerzeichen")
-        if (length(probs) == 0) NA_character_ else paste(probs, collapse = ", ")
-      })
-    ) %>%
-    dplyr::filter(!is.na(problem_type))
+    # 2) Kein "|" enthalten
+    pointblank::col_vals_regex(
+      columns = !!col,
+      regex   = "^[^|]*$",
+      actions = act_fail,
+      step_id = "or_check",
+      label   = "or_check"
+    ) |>
 
-  # Zeilen mit echten Problemen (ohne "Verdacht auf Nicht-Organisationseinheiten")
-  problem_rows <- result %>%
-    dplyr::filter(!problem_type %in% "Verdacht auf Nicht-Organisationseinheiten") %>%
-    dplyr::filter(!stringr::str_detect(problem_type, "^Verdacht auf Nicht-Organisationseinheiten$")) %>%
-    nrow()
+    # 3) Kein ">" enthalten
+    pointblank::col_vals_regex(
+      columns = !!col,
+      regex   = "^[^>]*$",
+      actions = act_fail,
+      step_id = "greater_check",
+      label   = "greater_check"
+    ) |>
 
-  problem_pct <- if (checked_rows > 0) problem_rows / checked_rows * 100 else 0
+    # 4) Länge <= 1000
+    pointblank::col_vals_between(
+      columns = .nchar_org,
+      left = 0, right = 1000,
+      preconditions = function(x) dplyr::mutate(x, .nchar_org = nchar(!!col)),
+      actions = act_warn,
+      step_id = "length_check",
+      label   = "length_check"
+    ) |>
 
-  # Einzigartige Organisationseinheiten extrahieren
-  unique_orgs <- data %>%
-    dplyr::filter(!is.na(.data[[organisation_col]]) & .data[[organisation_col]] != "") %>%
-    dplyr::pull(.data[[organisation_col]]) %>%
-    stringr::str_split("\\s*;\\s*") %>%
-    purrr::flatten_chr() %>%
-    stringr::str_trim() %>%
-    unique() %>%
-    discard(~ .x == "")
+    # 5) Keine überflüssigen Leerzeichen
+    pointblank::col_vals_expr(
+      expr = ~ organisation == .squished,
+      preconditions = function(x) {
+        dplyr::mutate(x, .squished = stringr::str_squish(x[[rlang::as_string(col)]]))
+      },
+      actions = act_fail,
+      step_id = "squished_check",
+      label   = "squished_check"
+    ) |>
 
-  n_unique_orgs <- length(unique_orgs)
+    # 6) Warnung bei Master/Bachelor-Begriffen
+    pointblank::col_vals_regex(
+      columns = !!col,
+      regex   = "^(?!.*(Bachelor|Master|Diplom|Staatsexamen|Staatsexamens|SS|WS|B\\.Sc\\.|M\\.Sc\\.|B\\.A\\.|M\\.A\\.)).*$",
+      actions = act_warn,
+      step_id = "non_orga_check",
+      label   = "non_orga_check"
+    ) |>
+    pointblank::interrogate()
 
-  # Übersichtliche Ausgabe der Statistiken
-  message("\n||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||")
-  message("||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||")
-  message("||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||")
-  message("                                 ORGANISATIONEN                                   ")
-  message("||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||")
-  message("||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||")
-  message("||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||")
-
-  message("\n:::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::")
-  message("                                    ÜBERSICHT            ")
-  message(":::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::\n")
-
-  message(sprintf("• Gesamte Zeilen:             %d", total_rows))
-  message(sprintf("• NA/Leere Zeilen:            %d", na_rows))
-  message(sprintf("• Überprüfte Zeilen:          %d", checked_rows))
-  message(sprintf("• Problematische Zeilen:      %d", problem_rows))
-  message(sprintf("• Problematische Zeilen (%%): %.2f%%", problem_pct))
-  message(sprintf("• Einzigartige Organisationen: %d", n_unique_orgs))
-
-  if (nrow(result) > 0) {
-    problem_summary <- result %>%
-      tidyr::separate_rows(problem_type, sep = ",\\s*") %>%
-      dplyr::count(problem_type, sort = TRUE)
-
-    message("\n⛔ Achtung: Es wurden folgende Probleme gefunden:\n")
-    purrr::walk2(problem_summary$problem_type, problem_summary$n, ~ {
-      message(sprintf("❌ %s: %d", .x, .y))
-    })
-    message("\n🔔 Hinweis: Probleme auf der Variable `organisation` bitte beheben und Check erneut durchführen.\n")
+  if (isTRUE(show_report)) {
+    print(pointblank::get_agent_report(agent, title = "Organisation-Check"))
   }
-
-  # Ergebnis nach problem_type sortieren (alphabetisch)
-  if ("problem_type" %in% names(result)) {
-    result <- result %>%
-      dplyr::arrange(problem_type)
-  }
-
-  return(result)
+  invisible(agent)
 }

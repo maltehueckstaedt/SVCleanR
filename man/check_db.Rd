@@ -2,45 +2,48 @@
 % Please edit documentation in R/check_db.R
 \name{check_db}
 \alias{check_db}
-\title{Prüft die Datenbankstruktur und führt Validierungen durch}
+\title{Check für DB}
 \usage{
-check_db(
-  data,
-  hochschule_col = "hochschule",
-  hochschule_kurz_col = "hochschule_kurz",
-  organisation_col = "organisation"
-)
+check_db(test_data, werte = NULL)
 }
 \arguments{
-\item{data}{Dataframe mit den zu prüfenden Daten.}
+\item{test_data}{Ein \code{data.frame} mit den zu prüfenden Daten.}
 
-\item{hochschule_col}{Name der Hochschulspalte (Standard: \code{"hochschule"}).}
-
-\item{hochschule_kurz_col}{Name der Kurzform-Hochschulspalte (Standard: \code{"hochschule_kurz"}).}
-
-\item{organisation_col}{Name der Organisationsspalte (Standard: \code{"organisation"}).}
+\item{werte}{Optional: Vektor erlaubter Hochschulnamen.
+Falls \code{NULL}, wird automatisch die Liste der langen Hochschulnamen
+aus der mitgelieferten SQL-Datei verwendet.}
 }
 \value{
-Gibt unsichtbar \code{TRUE} zurück, wenn keine Variablen fehlen, andernfalls \code{FALSE}.
+Eine unsichtbare Liste mit den Elementen:
+\itemize{
+\item \code{agent}: Der \pkg{pointblank} Agent mit den Prüfergebnissen.
+\item \code{hochschule_lang}: Vektor mit erlaubten langen Hochschulnamen.
+\item \code{hochschule_kurz}: Vektor mit erlaubten Hochschulkürzeln.
+\item \code{werte}: Der tatsächlich verwendete Vergleichs-Vektor für \code{hochschule}.
+}
+
+Zusätzlich wird ein HTML-Report im Viewer angezeigt.
 }
 \description{
-Diese Funktion prüft, ob alle erwarteten Variablen im Datensatz vorhanden sind,
-listet fehlende Variablen auf und führt anschließend Plausibilitätsprüfungen
-der Hochschul- und Organisationsspalten durch.
+Diese Funktion prüft mit \pkg{pointblank}, ob die DB
+die erwarteten Spalten enthält und ob die Werte für Hochschulnamen und -kürzel
+mit den in den SQL-Paketdaten hinterlegten Referenzlisten übereinstimmen.
 }
 \details{
-Es wird außerdem eine Übersicht über fehlende Variablen ausgegeben.
-Bei fehlenden Spalten läuft die Funktion trotzdem weiter und prüft alle
-vorhandenen Variablen.
+Die Funktion lädt die Referenzlisten für Hochschulnamen und -kürzel aus der
+Datei \code{extdata/hochschulen_namen_kuerzel.sql} des Pakets \pkg{SVCleanR}.
 
-Folgende Schritte werden durchgeführt:
+Folgende Checks werden durchgeführt:
 \enumerate{
-\item Überprüfung, ob alle erwarteten Variablen in \code{data} vorhanden sind.
-\item Auflistung aller fehlenden Variablen in der Konsole.
-\item Validierung der Hochschulspalten über \code{check_hochschule()}.
-\item Validierung der Organisationsspalte über \code{check_organisation()}.
+\item Alle erwarteten Spaltennamen sind im Datensatz vorhanden.
+\item Werte in der Spalte \code{hochschule} liegen in der erlaubten Wertemenge.
+\item Werte in der Spalte \code{hochschule_kurz} liegen in der erlaubten Wertemenge.
 }
 }
-\seealso{
-\code{\link{check_hochschule}}, \code{\link{check_organisation}}
+\examples{
+\dontrun{
+  res <- check_db(test_data)
+  res$agent |> pointblank::get_agent_report()
+}
+
 }

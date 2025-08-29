@@ -1,77 +1,94 @@
-#' Prüft die Datenbankstruktur und führt Validierungen durch
+#' Check für DB
 #'
-#' Diese Funktion prüft, ob alle erwarteten Variablen im Datensatz vorhanden sind,
-#' listet fehlende Variablen auf und führt anschließend Plausibilitätsprüfungen
-#' der Hochschul- und Organisationsspalten durch.
+#' Diese Funktion prüft mit \pkg{pointblank}, ob die DB
+#' die erwarteten Spalten enthält und ob die Werte für Hochschulnamen und -kürzel
+#' mit den in den SQL-Paketdaten hinterlegten Referenzlisten übereinstimmen.
 #'
-#' Es wird außerdem eine Übersicht über fehlende Variablen ausgegeben.
-#' Bei fehlenden Spalten läuft die Funktion trotzdem weiter und prüft alle
-#' vorhandenen Variablen.
+#' @param test_data Ein \code{data.frame} mit den zu prüfenden Daten.
+#' @param werte Optional: Vektor erlaubter Hochschulnamen. 
+#'   Falls \code{NULL}, wird automatisch die Liste der langen Hochschulnamen
+#'   aus der mitgelieferten SQL-Datei verwendet.
 #'
 #' @details
-#' Folgende Schritte werden durchgeführt:
+#' Die Funktion lädt die Referenzlisten für Hochschulnamen und -kürzel aus der
+#' Datei \code{extdata/hochschulen_namen_kuerzel.sql} des Pakets \pkg{SVCleanR}.
+#' 
+#' Folgende Checks werden durchgeführt:
 #' \enumerate{
-#'   \item Überprüfung, ob alle erwarteten Variablen in \code{data} vorhanden sind.
-#'   \item Auflistung aller fehlenden Variablen in der Konsole.
-#'   \item Validierung der Hochschulspalten über \code{check_hochschule()}.
-#'   \item Validierung der Organisationsspalte über \code{check_organisation()}.
+#'   \item Alle erwarteten Spaltennamen sind im Datensatz vorhanden.
+#'   \item Werte in der Spalte \code{hochschule} liegen in der erlaubten Wertemenge.
+#'   \item Werte in der Spalte \code{hochschule_kurz} liegen in der erlaubten Wertemenge.
 #' }
 #'
-#' @param data Dataframe mit den zu prüfenden Daten.
-#' @param hochschule_col Name der Hochschulspalte (Standard: \code{"hochschule"}).
-#' @param hochschule_kurz_col Name der Kurzform-Hochschulspalte (Standard: \code{"hochschule_kurz"}).
-#' @param organisation_col Name der Organisationsspalte (Standard: \code{"organisation"}).
+#' @return Eine unsichtbare Liste mit den Elementen:
+#' \itemize{
+#'   \item \code{agent}: Der \pkg{pointblank} Agent mit den Prüfergebnissen.
+#'   \item \code{hochschule_lang}: Vektor mit erlaubten langen Hochschulnamen.
+#'   \item \code{hochschule_kurz}: Vektor mit erlaubten Hochschulkürzeln.
+#'   \item \code{werte}: Der tatsächlich verwendete Vergleichs-Vektor für \code{hochschule}.
+#' }
 #'
-#' @return Gibt unsichtbar \code{TRUE} zurück, wenn keine Variablen fehlen, andernfalls \code{FALSE}.
+#' Zusätzlich wird ein HTML-Report im Viewer angezeigt.
 #'
-#' @seealso \code{\link{check_hochschule}}, \code{\link{check_organisation}}
+#' @examples
+#' \dontrun{
+#'   res <- check_db(test_data)
+#'   res$agent |> pointblank::get_agent_report()
+#' }
+#'
+#' @import pointblank
+#' @import stringr
+#' @importFrom dplyr all_of
+#' @importFrom stats na.omit
 #' @export
-check_db <- function(data,
-                     hochschule_col = "hochschule",
-                     hochschule_kurz_col = "hochschule_kurz",
-                     organisation_col = "organisation") {
+check_db <- function(test_data, werte = NULL) {
+  requireNamespace("stringr")
+  requireNamespace("pointblank")
 
-  # Erwartete Variablen definieren
+  # SQL aus Paketinterna laden
+  sql_file <- system.file("extdata", "hochschulen_namen_kuerzel.sql",
+                          package = "SVCleanR")
+  sql_text <- readLines(sql_file, warn = FALSE)
+
+  hochschule_lang <- stringr::str_match(sql_text, "\\([0-9]+, '([^']+)'")[,2]
+  hochschule_kurz <- stringr::str_match(sql_text, "\\([0-9]+, '[^']+', '([^']+)'")[,2]
+
+  hochschule_lang <- hochschule_lang[!is.na(hochschule_lang)]
+  hochschule_kurz <- hochschule_kurz[!is.na(hochschule_kurz)]
+
+  # Fallback: wenn kein Set übergeben → lange Namen
+  if (is.null(werte)) werte <- hochschule_lang
+
   expected_vars <- c(
-    "id", "anmerkungen", "dozierende", "ects", "fakultaet", "hochschule",
-    "hochschule_kurz", "jahr", "kursbeschreibung", "kursformat_original",
-    "kursformat_recoded", "lehrtyp", "lernmethode", "lernziele", "literatur",
-    "module", "nummer", "organisation_orig", "organisation", "pfad",
-    "pruefung", "scrape_datum", "semester", "sprache_original", "sprache_recoded",
-    "studiengaenge", "sws", "teilnehmerzahl", "titel", "url",
-    "voraussetzungen", "zusatzinformationen", "institut", "data_analytics_ki",
-    "softwareentwicklung", "nutzerzentriertes_design", "it_architektur",
-    "hardware_robotikentwicklung", "quantencomputing", "lehr_und_forschungsbereich",
-    "studienbereich", "faechergruppe", "luf_code", "stub_code", "fg_code",
+    "id","anmerkungen","dozierende","ects","fakultaet","hochschule",
+    "hochschule_kurz","jahr","kursbeschreibung","kursformat_original",
+    "kursformat_recoded","lehrtyp","lernmethode","lernziele","literatur",
+    "module","nummer","organisation_orig","organisation","pfad",
+    "pruefung","scrape_datum","semester","sprache_original","sprache_recoded",
+    "studiengaenge","sws","teilnehmerzahl","titel","url",
+    "voraussetzungen","zusatzinformationen","institut","data_analytics_ki",
+    "softwareentwicklung","nutzerzentriertes_design","it_architektur",
+    "hardware_robotikentwicklung","quantencomputing","lehr_und_forschungsbereich",
+    "studienbereich","faechergruppe","luf_code","stub_code","fg_code",
     "matchingart"
   )
 
-  # Fehlende Variablen prüfen
-  missing_cols <- setdiff(expected_vars, names(data))
+  agent <- pointblank::create_agent(tbl = ~ test_data) |>
+    pointblank::col_exists(columns = dplyr::all_of(expected_vars),
+                           actions = pointblank::action_levels(stop_at = 0.001)) |>
+    pointblank::col_vals_in_set(columns = pointblank::vars(hochschule),
+                                set = werte,
+                                actions = pointblank::action_levels(stop_at = 0.001)) |>
+    pointblank::col_vals_in_set(columns = pointblank::vars(hochschule_kurz),
+                                set = hochschule_kurz,
+                                actions = pointblank::action_levels(stop_at = 0.001)) |>
+    pointblank::interrogate()
 
-  if (length(missing_cols) > 0) {
-    message(crayon::red("\n||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||"))
-    message(crayon::red("||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||")) 
-    message(crayon::red("⛔ Fehlende Variablen:"))
-    purrr::walk(missing_cols, ~ message(crayon::red(paste0("   ❌ ", .x))))
-    message(crayon::red("||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||"))
-    message(crayon::red("||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||"))
-    Sys.sleep(3)
-  }
-
-  # Nur Checks ausführen, wenn Spalten existieren
-  if (hochschule_col %in% names(data)) {
-    check_hochschule(data[[hochschule_col]])
-    Sys.sleep(2)
-  }
-  if (hochschule_kurz_col %in% names(data)) {
-    check_hochschule(data[[hochschule_kurz_col]])
-    Sys.sleep(2)
-  }
-  if (organisation_col %in% names(data)) {
-    check_organisation(data, organisation_col)
-    Sys.sleep(2)
-  }
-
-  invisible(length(missing_cols) == 0)
+  print(pointblank::get_agent_report(agent, title = "DB-Check"))
+  invisible(list(
+    agent = agent,
+    hochschule_lang = hochschule_lang,
+    hochschule_kurz = hochschule_kurz,
+    werte = werte
+  ))
 }
