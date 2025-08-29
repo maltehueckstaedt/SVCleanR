@@ -12,7 +12,7 @@
 #' @details
 #' Die Funktion lädt die Referenzlisten für Hochschulnamen und -kürzel aus der
 #' Datei \code{extdata/hochschulen_namen_kuerzel.sql} des Pakets \pkg{SVCleanR}.
-#' 
+#'
 #' Folgende Checks werden durchgeführt:
 #' \enumerate{
 #'   \item Alle erwarteten Spaltennamen sind im Datensatz vorhanden.
@@ -37,9 +37,8 @@
 #' }
 #'
 #' @import pointblank
-#' @import stringr
+#' @importFrom stringr str_match
 #' @importFrom dplyr all_of
-#' @importFrom stats na.omit
 #' @export
 check_db <- function(test_data, werte = NULL) {
   requireNamespace("stringr")

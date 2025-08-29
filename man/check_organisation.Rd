@@ -18,7 +18,7 @@ check_organisation(
 
 \item{stop_at}{Schwellenwert für Fehler-Toleranz. Kann relativ (Anteil 0–1)
 oder absolut (z. B. 1 für „Null Toleranz“) angegeben werden.
-Standard: 0.001 (= 0.1 \% fehlerhafte Zeilen).}
+Standard: 1 (= Null Toleranz).}
 
 \item{show_report}{Logisch; wenn \code{TRUE}, wird ein pointblank-Report
 mit Badges im Viewer ausgegeben. Standard: \code{TRUE}.}
@@ -46,7 +46,7 @@ Die folgenden Prüfungen werden durchgeführt:
 }
 \examples{
 \dontrun{
-  agent <- pb_check_organisation(test_data, organisation_col = "organisation")
+  agent <- check_organisation(test_data, organisation_col = "organisation")
   pointblank::get_agent_report(agent)
 }
 

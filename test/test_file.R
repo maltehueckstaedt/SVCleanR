@@ -1,5 +1,5 @@
 # Beispielaufruf mit 3 Key-Variablen
-#remotes::install_github("maltehueckstaedt/SVCleanR", force = TRUE)
+remotes::install_github("maltehueckstaedt/SVCleanR", force = TRUE)
 
 library(SVCleanR)
 
@@ -14,8 +14,15 @@ library(SVCleanR)
 
 getwd()
 devtools::document()
-devtools::install()
+devtools::install() 
+devtools::document()
 
+
+deps <- renv::dependencies()
+deps$Package
+for (pkg in deps$Package) {
+  usethis::use_package(pkg)
+}
 
 # 2. Dann Version erhöhen
 usethis::use_version("patch")
