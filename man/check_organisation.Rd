@@ -7,7 +7,7 @@
 check_organisation(
   data,
   organisation_col = "organisation",
-  stop_at = 0.001,
+  stop_at = 1,
   show_report = TRUE
 )
 }

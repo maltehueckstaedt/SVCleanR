@@ -35,7 +35,7 @@
 #'
 #' @export
 check_organisation <- function(data, organisation_col = "organisation",
-                               stop_at = 0.001, show_report = TRUE) {
+                               stop_at = 1, show_report = TRUE) {
   stopifnot(is.data.frame(data))
   col <- rlang::ensym(organisation_col)
 

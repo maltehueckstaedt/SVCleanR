@@ -1,4 +1,6 @@
 # Beispielaufruf mit 3 Key-Variablen
+#remotes::install_github("maltehueckstaedt/SVCleanR", force = TRUE)
+
 library(SVCleanR)
 
 # ||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
