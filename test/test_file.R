@@ -1,8 +1,7 @@
 # Beispielaufruf mit 3 Key-Variablen
 remotes::install_github("maltehueckstaedt/SVCleanR", force = TRUE)
-
 library(SVCleanR)
-
+ 
 # ||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
 # ||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
 # ||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
@@ -64,9 +63,7 @@ fails <- pointblank::get_data_extracts(agent)
 # Nur den separator_check herausziehen
 sep_fails <- fails$separator_check
 
-
-check_hochschule(test_data$hochschule_kurz)
-
+ 
  
 check_db(test_data) 
 
